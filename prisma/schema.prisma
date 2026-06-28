@@ -1,0 +1,326 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                Int       @id @default(autoincrement())
+  name              String
+  email             String    @unique
+  email_verified_at DateTime?
+  password          String
+  remember_token    String?
+  role              String    @default("qc")
+  department        String?
+  employee_id       String?
+  is_active         Boolean   @default(true)
+  last_login_at     DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  activity_logs             ActivityLog[]
+  reported_defects          DefectReport[]       @relation("Reporter")
+  resolved_defects          DefectReport[]       @relation("Resolver")
+  feedbacks_as_client       Feedback[]           @relation("Client")
+  feedbacks_responded       Feedback[]           @relation("Responder")
+  inspections_scheduled     InspectionSchedule[] @relation("Inspector")
+  joints_void_requested     JointTemplate[]      @relation("VoidRequester")
+  joints_void_approved      JointTemplate[]      @relation("VoidApprover")
+  visual_inspections        VisualInspection[]   @relation("Inspector")
+  visual_inspections_appr   VisualInspection[]   @relation("Approver")
+  wtrs_approved             WTR[]                @relation("Approver")
+  wtrs_transmitted          WTR[]                @relation("Transmitter")
+  wtrs_created              WTR[]                @relation("Creator")
+}
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement())
+  user_id     Int?
+  model_type  String
+  model_id    Int?
+  action      String
+  old_values  Json?
+  new_values  Json?
+  ip_address  String?
+  user_agent  String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  user        User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+}
+
+model DefectReport {
+  id               Int       @id @default(autoincrement())
+  wtr_id           Int
+  reporter_id      Int
+  defect_type      String    @default("other")
+  severity         String    @default("minor")
+  location         String?
+  description      String
+  photo_path       String?
+  status           String    @default("open")
+  resolved_by      Int?
+  resolved_at      DateTime?
+  resolution_notes String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  wtr              WTR       @relation(fields: [wtr_id], references: [id], onDelete: Cascade)
+  reporter         User      @relation("Reporter", fields: [reporter_id], references: [id], onDelete: Restrict)
+  resolver         User?     @relation("Resolver", fields: [resolved_by], references: [id], onDelete: SetNull)
+}
+
+model Feedback {
+  id           Int       @id @default(autoincrement())
+  wtr_id       Int?
+  client_id    Int
+  wtr_number   String?
+  message      String
+  status       String    @default("open")
+  response     String?
+  responded_by Int?
+  responded_at DateTime?
+  closed_at    DateTime?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  wtr          WTR?      @relation(fields: [wtr_id], references: [id], onDelete: Cascade)
+  client       User      @relation("Client", fields: [client_id], references: [id], onDelete: Restrict)
+  responder    User?     @relation("Responder", fields: [responded_by], references: [id], onDelete: SetNull)
+}
+
+model InspectionSchedule {
+  id             Int      @id @default(autoincrement())
+  wtr_id         Int
+  inspector_id   Int?
+  scheduled_date DateTime @db.Date
+  type           String   @default("visual")
+  status         String   @default("scheduled")
+  notes          String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  wtr            WTR      @relation(fields: [wtr_id], references: [id], onDelete: Cascade)
+  inspector      User?    @relation("Inspector", fields: [inspector_id], references: [id], onDelete: SetNull)
+}
+
+model JointTemplate {
+  id                 Int       @id @default(autoincrement())
+  joint_number       String
+  weld_type          String
+  material_spec      String?
+  thickness          Decimal   @db.Decimal(8, 2)
+  diameter           Decimal?  @db.Decimal(8, 2)
+  wps_number         String?
+  status             String    @default("active")
+  void_requested_by  Int?
+  void_approved_by   Int?
+  void_reason        String?
+  void_requested_at  DateTime?
+  void_approved_at   DateTime?
+  workpack_id        Int?
+  piecemark          String?
+  drawing_number     String?
+  weld_length        Decimal?  @db.Decimal(8, 2)
+  piecemark_number   String?
+  piecemark_revision String    @default("0")
+  item_1_desc        String?
+  item_1_heat_no     String?
+  item_2_desc        String?
+  item_2_heat_no     String?
+  module             String?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+
+  spool_id           Int?
+  spool              Spool?    @relation(fields: [spool_id], references: [id], onDelete: Cascade)
+  
+  void_requester     User?     @relation("VoidRequester", fields: [void_requested_by], references: [id], onDelete: SetNull)
+  void_approver      User?     @relation("VoidApprover", fields: [void_approved_by], references: [id], onDelete: SetNull)
+  visual_inspections VisualInspection[]
+  wtrs               WTR[]
+}
+
+model VisualInspection {
+  id                Int       @id @default(autoincrement())
+  joint_id          Int
+  inspector_id      Int
+  inspection_date   DateTime  @db.Date
+  result            String    @default("accept")
+  findings          String?
+  photos            Json?
+  corrective_action String?
+  approved_by       Int?
+  approved_at       DateTime?
+  dimensions        String?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  joint             JointTemplate @relation(fields: [joint_id], references: [id], onDelete: Cascade)
+  inspector         User          @relation("Inspector", fields: [inspector_id], references: [id], onDelete: Restrict)
+  approver          User?         @relation("Approver", fields: [approved_by], references: [id], onDelete: SetNull)
+  wtrs              WTR[]
+}
+
+model WTR {
+  id                   Int       @id @default(autoincrement())
+  wtr_number           String
+  project_id           Int?
+  joint_id             Int
+  visual_inspection_id Int?
+  weld_date            DateTime? @db.Date
+  status               String    @default("draft")
+  approved_by          Int?
+  approval_date        DateTime?
+  transmitted_by       Int?
+  transmitted_at       DateTime?
+  remarks              String?
+  rejection_note       String?
+  created_by           Int?
+  inspection_date      DateTime? @db.Date
+  workpack_id          Int?
+  location             String?
+  area                 String?
+  description          String?
+  notes                String?
+  test_pack_no         String?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+
+  project              Project?           @relation(fields: [project_id], references: [id], onDelete: Restrict)
+  joint                JointTemplate      @relation(fields: [joint_id], references: [id], onDelete: Cascade)
+  visual_inspection    VisualInspection?  @relation(fields: [visual_inspection_id], references: [id], onDelete: SetNull)
+  approver             User?              @relation("Approver", fields: [approved_by], references: [id], onDelete: SetNull)
+  transmitter          User?              @relation("Transmitter", fields: [transmitted_by], references: [id], onDelete: SetNull)
+  creator              User?              @relation("Creator", fields: [created_by], references: [id], onDelete: SetNull)
+  
+  defect_reports       DefectReport[]
+  feedbacks            Feedback[]
+  inspection_schedules InspectionSchedule[]
+  weld_passes          WeldPass[]
+  ndt_reports          NDTReport[]
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  name        String
+  client_name String?
+  location    String?
+  status      String   @default("active")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  wtrs        WTR[]
+  systems     EPCSystem[]
+}
+
+model EPCSystem {
+  id          Int      @id @default(autoincrement())
+  system_no   String
+  description String?
+  project_id  Int
+
+  lines       LineNumber[]
+  project     Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@unique([system_no, project_id])
+}
+
+model LineNumber {
+  id          Int      @id @default(autoincrement())
+  line_no     String
+  system_id   Int
+  
+  system      EPCSystem @relation(fields: [system_id], references: [id], onDelete: Cascade)
+  isometrics  Isometric[]
+
+  @@unique([line_no, system_id])
+}
+
+model Isometric {
+  id          Int      @id @default(autoincrement())
+  iso_no      String
+  revision    String   @default("0")
+  line_id     Int
+  
+  line        LineNumber @relation(fields: [line_id], references: [id], onDelete: Cascade)
+  spools      Spool[]
+
+  @@unique([iso_no, line_id])
+}
+
+model Spool {
+  id          Int      @id @default(autoincrement())
+  spool_no    String
+  iso_id      Int
+  
+  isometric   Isometric @relation(fields: [iso_id], references: [id], onDelete: Cascade)
+  joints      JointTemplate[]
+  
+  @@unique([spool_no, iso_id])
+}
+
+model Welder {
+  id             Int      @id @default(autoincrement())
+  stamp_no       String   @unique
+  name           String
+  qualifications String?
+  status         String   @default("active")
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  weld_passes    WeldPass[]
+}
+
+model WPS {
+  id             Int      @id @default(autoincrement())
+  wps_no         String   @unique
+  material_class String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  weld_passes    WeldPass[]
+}
+
+model WeldPass {
+  id          Int      @id @default(autoincrement())
+  wtr_id      Int
+  welder_id   Int
+  wps_id      Int?
+  pass_type   String   @default("root")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  wtr         WTR      @relation(fields: [wtr_id], references: [id], onDelete: Cascade)
+  welder      Welder   @relation(fields: [welder_id], references: [id], onDelete: Restrict)
+  wps         WPS?     @relation(fields: [wps_id], references: [id], onDelete: SetNull)
+
+  @@unique([wtr_id, welder_id, pass_type])
+}
+
+model NDTReport {
+  id          Int      @id @default(autoincrement())
+  wtr_id      Int
+  method      String   
+  report_no   String   @unique
+  result      String   
+  date        DateTime @db.Date
+  remarks     String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  wtr         WTR      @relation(fields: [wtr_id], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id         Int      @id @default(autoincrement())
+  email      String
+  token      String   @unique
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@index([email])
+}
