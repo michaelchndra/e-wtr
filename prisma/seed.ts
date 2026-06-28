@@ -16,33 +16,33 @@ async function main() {
   const passwordHash = await bcrypt.hash('admin123', 10);
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@epcc.com' },
+    where: { email: 'admin@e-wtr.lunemich.dev' },
     update: {},
-    create: { email: 'admin@epcc.com', password: passwordHash, name: 'Administrator', role: 'admin' },
+    create: { email: 'admin@e-wtr.lunemich.dev', password: passwordHash, name: 'Administrator', role: 'admin' },
   });
 
   const qc = await prisma.user.upsert({
-    where: { email: 'qc@epcc.com' },
+    where: { email: 'qc@e-wtr.lunemich.dev' },
     update: {},
-    create: { email: 'qc@epcc.com', password: passwordHash, name: 'QC Inspector', role: 'qc' },
+    create: { email: 'qc@e-wtr.lunemich.dev', password: passwordHash, name: 'QC Inspector', role: 'qc' },
   });
 
   const supervisor = await prisma.user.upsert({
-    where: { email: 'supervisor@epcc.com' },
+    where: { email: 'supervisor@e-wtr.lunemich.dev' },
     update: {},
-    create: { email: 'supervisor@epcc.com', password: passwordHash, name: 'QC Supervisor', role: 'supervisor' },
+    create: { email: 'supervisor@e-wtr.lunemich.dev', password: passwordHash, name: 'QC Supervisor', role: 'supervisor' },
   });
 
   const dc = await prisma.user.upsert({
-    where: { email: 'dc@epcc.com' },
+    where: { email: 'dc@e-wtr.lunemich.dev' },
     update: {},
-    create: { email: 'dc@epcc.com', password: passwordHash, name: 'Document Control', role: 'document_control' },
+    create: { email: 'dc@e-wtr.lunemich.dev', password: passwordHash, name: 'Document Control', role: 'document_control' },
   });
 
   const client = await prisma.user.upsert({
-    where: { email: 'client@epcc.com' },
+    where: { email: 'client@e-wtr.lunemich.dev' },
     update: {},
-    create: { email: 'client@epcc.com', password: passwordHash, name: 'Client Rep', role: 'client' },
+    create: { email: 'client@e-wtr.lunemich.dev', password: passwordHash, name: 'Client Rep', role: 'client' },
   });
 
   console.log('Seed: Default accounts created:');

@@ -97,15 +97,23 @@ npm run dev
 
 App runs on [http://localhost:3000](http://localhost:3000).
 
-### Creating the first admin user
+### Default Demo Accounts
 
-There's no built-in seed script. After setting up the database, create your first user by inserting directly or using Prisma Studio:
+You can populate the database with default roles and projects using the seed script:
 
 ```bash
-npx prisma studio
+npx ts-node prisma/seed.ts
 ```
 
-Create a user in the `User` table with role `admin`. Hash the password with bcrypt (10 rounds).
+This will create the following default users (All passwords are `admin123`):
+
+| Role | Email |
+|---|---|
+| Administrator | `admin@e-wtr.lunemich.dev` |
+| QC Inspector | `qc@e-wtr.lunemich.dev` |
+| QC Supervisor | `supervisor@e-wtr.lunemich.dev` |
+| Document Control | `dc@e-wtr.lunemich.dev` |
+| Client Rep | `client@e-wtr.lunemich.dev` |
 
 ## Role Permissions
 
